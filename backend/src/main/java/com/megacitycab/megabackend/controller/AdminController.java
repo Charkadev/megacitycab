@@ -10,7 +10,7 @@ public class AdminController {
     @GetMapping("/dashboard")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")  // ✅ Ensure correct role format
     public String getAdminDashboard() {
-        return "Welcome to the Admin Dashboard! 🚀";
+        return "Welcome to the Admin Dashboard! ";
     }
 
     @GetMapping("/all-users")
