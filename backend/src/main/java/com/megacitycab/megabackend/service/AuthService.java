@@ -8,6 +8,7 @@ import com.megacitycab.megabackend.model.User;
 import com.megacitycab.megabackend.repository.UserRepository;
 import com.megacitycab.megabackend.config.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,31 +20,30 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     public AuthResponse register(RegisterRequest request) {
-        // ✅ Ensure role is set correctly (default to ROLE_USER)
         Role role = request.getRole() != null ? request.getRole() : Role.ROLE_USER;
 
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(role) // ✅ Assign correct role
+                .role(role)
                 .build();
 
         userRepository.save(user);
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name()); // ✅ Pass role in token
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
         return new AuthResponse(token);
     }
 
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BadCredentialsException("User not found"));  // ✅ Throw correct exception
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password");
+            throw new BadCredentialsException("Invalid password");  // ✅ Throw correct exception
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name()); // ✅ Use correct parameters
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
         return new AuthResponse(token);
     }
