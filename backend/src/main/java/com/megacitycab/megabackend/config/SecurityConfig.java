@@ -36,6 +36,9 @@ public class SecurityConfig {
                         .requestMatchers("/", "/auth/**").permitAll()  // ✅ Public Endpoints
                         .requestMatchers("/drivers/available").permitAll()  // ✅ Allow public access
                         .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")  // ✅ Admin Access Only
+                        .requestMatchers("/billing/generate/**").hasAuthority("ROLE_ADMIN") // ✅ Admin-only billing generation
+                        .requestMatchers("/billing/user/**").authenticated() // ✅ Users can view their own bills
+                        .requestMatchers("/billing/all").hasAuthority("ROLE_ADMIN") // ✅ Admin can see all bills
                         .anyRequest().authenticated()  // ✅ All other requests require authentication
                 )
                 .exceptionHandling(exception -> exception
