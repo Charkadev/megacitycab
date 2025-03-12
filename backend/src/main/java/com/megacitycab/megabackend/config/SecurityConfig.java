@@ -33,7 +33,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/auth/**").permitAll()  // ✅ Public Endpoints
+                        .requestMatchers("/", "/auth/**", "/help/**").permitAll()  // ✅ Public Endpoints including /help
                         .requestMatchers("/drivers/available").permitAll()  // ✅ Allow public access
                         .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")  // ✅ Admin Access Only
                         .requestMatchers("/billing/generate/**").hasAuthority("ROLE_ADMIN") // ✅ Admin-only billing generation
