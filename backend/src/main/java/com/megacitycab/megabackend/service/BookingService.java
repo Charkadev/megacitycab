@@ -2,8 +2,9 @@ package com.megacitycab.megabackend.service;
 
 import com.megacitycab.megabackend.model.Booking;
 import com.megacitycab.megabackend.model.BookingStatus;
-import com.megacitycab.megabackend.model.Role;
+import com.megacitycab.megabackend.model.DriverEarnings;
 import com.megacitycab.megabackend.repository.BookingRepository;
+import com.megacitycab.megabackend.repository.DriverEarningsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BookingService {
     private final BookingRepository bookingRepository;
-    private final BillingService billingService; // ✅ Inject Billing Service to generate a bill
+    private final BillingService billingService;
+    private final DriverEarningsRepository driverEarningsRepository;
 
     // ✅ Create a Booking
     public Booking createBooking(Booking booking) {
@@ -69,6 +71,17 @@ public class BookingService {
         // ✅ Automatically generate a bill
         billingService.generateBill(id);
 
+        // ✅ Update driver earnings
+        updateDriverEarnings(booking.getDriverId(), booking.getFare());
+
         return booking;
+    }
+
+    private void updateDriverEarnings(String driverId, double fare) {
+        DriverEarnings earnings = driverEarningsRepository.findByDriverId(driverId)
+                .orElse(DriverEarnings.builder().driverId(driverId).totalEarnings(0).build());
+
+        earnings.setTotalEarnings(earnings.getTotalEarnings() + fare);
+        driverEarningsRepository.save(earnings);
     }
 }

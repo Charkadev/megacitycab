@@ -7,7 +7,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/drivers")
@@ -15,7 +14,7 @@ import java.util.Optional;
 public class DriverController {
     private final DriverService driverService;
 
-    // ✅ Admin can add a driver (Now returns confirmation message)
+    // ✅ Admin can add a driver
     @PostMapping("/add")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public String addDriver(@RequestBody Driver driver) {
@@ -46,7 +45,7 @@ public class DriverController {
         return driverService.getAllDrivers();
     }
 
-    // ✅ Users can view available drivers
+    // ✅ Users can only view available drivers (No changes needed)
     @GetMapping("/available")
     public List<Driver> getAvailableDrivers() {
         return driverService.getAvailableDrivers();

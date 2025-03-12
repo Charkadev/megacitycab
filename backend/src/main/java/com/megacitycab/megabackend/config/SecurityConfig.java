@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/billing/user/**").authenticated() // ✅ Users can view their own bills
                         .requestMatchers("/billing/all").hasAuthority("ROLE_ADMIN") // ✅ Admin can see all bills
                         .requestMatchers("/bookings/cancel/**").authenticated() // ✅ Allow users to cancel their own bookings
+                        .requestMatchers("/drivers/earnings/**").hasAuthority("ROLE_ADMIN") // ✅ Only Admins can check driver earnings
                         .anyRequest().authenticated()  // ✅ All other requests require authentication
                 )
                 .exceptionHandling(exception -> exception
@@ -67,7 +68,7 @@ public class SecurityConfig {
         return (HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex) -> {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json");
-            response.getWriter().write("{\"error\": \"Access Denied: You can only cancel your own bookings.\"}");
+            response.getWriter().write("{\"error\": \"Access Denied: Only Admins can check driver earnings.\"}");
         };
     }
 }
