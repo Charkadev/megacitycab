@@ -2,10 +2,11 @@ package com.megacitycab.megabackend.service;
 
 import com.megacitycab.megabackend.model.Booking;
 import com.megacitycab.megabackend.model.BookingStatus;
+import com.megacitycab.megabackend.model.Role;
 import com.megacitycab.megabackend.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BookingService {
     private final BookingRepository bookingRepository;
+    private final BillingService billingService; // ✅ Inject Billing Service to generate a bill
 
     // ✅ Create a Booking
     public Booking createBooking(Booking booking) {
@@ -37,14 +39,36 @@ public class BookingService {
         return bookingRepository.findAll();
     }
 
-    // ✅ Cancel a Booking
-    public Booking cancelBooking(String id) {
-        Optional<Booking> bookingOpt = bookingRepository.findById(id);
-        if (bookingOpt.isPresent()) {
-            Booking booking = bookingOpt.get();
-            booking.setStatus(BookingStatus.CANCELLED);
-            return bookingRepository.save(booking);
+    // ✅ Cancel a Booking (User/Admin)
+    public Booking cancelBooking(String bookingId, String userId, String userRole) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // ✅ Allow only the user who made the booking OR an Admin to cancel
+        if (!booking.getUserId().equals(userId) && !userRole.equals("ROLE_ADMIN")) {
+            throw new AccessDeniedException("Unauthorized to cancel this booking.");
         }
-        throw new RuntimeException("Booking not found");
+
+        booking.setStatus(BookingStatus.CANCELLED);
+        return bookingRepository.save(booking);
+    }
+
+    // ✅ Complete a Booking and Generate a Bill
+    public Booking completeBooking(String id) {
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new RuntimeException("Booking is already completed.");
+        }
+
+        // ✅ Update booking status to COMPLETED
+        booking.setStatus(BookingStatus.COMPLETED);
+        bookingRepository.save(booking);
+
+        // ✅ Automatically generate a bill
+        billingService.generateBill(id);
+
+        return booking;
     }
 }
