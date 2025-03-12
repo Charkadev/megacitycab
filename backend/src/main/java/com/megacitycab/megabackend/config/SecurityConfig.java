@@ -33,9 +33,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/auth/**").permitAll()
-                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN") // ✅ Ensure correct role format
-                        .anyRequest().authenticated()
+                        .requestMatchers("/", "/auth/**").permitAll()  // ✅ Public Endpoints
+                        .requestMatchers("/drivers/available").permitAll()  // ✅ Allow public access
+                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")  // ✅ Admin Access Only
+                        .anyRequest().authenticated()  // ✅ All other requests require authentication
                 )
                 .exceptionHandling(exception -> exception
                         .accessDeniedHandler(accessDeniedHandler()) // ✅ Custom Access Denied Handler
