@@ -9,6 +9,7 @@ import com.megacitycab.megabackend.repository.UserRepository;
 import com.megacitycab.megabackend.config.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,14 +38,20 @@ public class AuthService {
 
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadCredentialsException("User not found"));  // ✅ Throw correct exception
+                .orElseThrow(() -> new BadCredentialsException("User not found"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid password");  // ✅ Throw correct exception
+            throw new BadCredentialsException("Invalid password");
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
 
         return new AuthResponse(token);
+    }
+
+    // ✅ Added method to fetch user information based on email
+    public User getUserInfo(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
     }
 }
