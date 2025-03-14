@@ -15,5 +15,5 @@ public class User {
     private String username;
     private String email;
     private String password;
-    private Role role; // ✅ Role is now stored as "ROLE_ADMIN" or "ROLE_USER"
+    private Role role; //  Role is now stored as "ROLE_ADMIN" or "ROLE_USER"
 }

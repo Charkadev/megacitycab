@@ -1,13 +1,10 @@
 package com.megacitycab.megabackend.service;
 
-import com.megacitycab.megabackend.model.Booking;
-import com.megacitycab.megabackend.model.BookingStatus;
-import com.megacitycab.megabackend.model.DriverEarnings;
-import com.megacitycab.megabackend.repository.BookingRepository;
-import com.megacitycab.megabackend.repository.DriverEarningsRepository;
+import com.megacitycab.megabackend.model.*;
+import com.megacitycab.megabackend.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,72 +13,93 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BookingService {
     private final BookingRepository bookingRepository;
-    private final BillingService billingService;
-    private final DriverEarningsRepository driverEarningsRepository;
+    private final UserRepository userRepository;
+    private final DriverRepository driverRepository;
+    private final CarRepository carRepository;
 
-    // ✅ Create a Booking
-    public Booking createBooking(Booking booking) {
+    //  Users can create their own bookings
+    public Booking createBooking(Booking booking, String email) {
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        booking.setUserId(user.getId());
         booking.setStatus(BookingStatus.PENDING);
         booking.setTimestamp(LocalDateTime.now());
+
+        //  Validate Car Availability (Compare as String)
+        Car selectedCar = carRepository.findById(booking.getSelectedCarId())
+                .orElseThrow(() -> new RuntimeException("Selected car not found"));
+
+        if (!selectedCar.getStatus().equalsIgnoreCase("Available")) {
+            throw new RuntimeException("Selected car is not available for booking.");
+        }
+
+        //  Find an Available Driver for the Car
+        Optional<Driver> availableDriver = driverRepository.findByAssignedCarIdAndAvailabilityTrue(booking.getSelectedCarId());
+
+        if (availableDriver.isEmpty()) {
+            throw new RuntimeException("No available driver for the selected car.");
+        }
+
+        //  Assign Driver & Update Car Status
+        Driver assignedDriver = availableDriver.get();
+        assignedDriver.assignCar(selectedCar.getId());
+        driverRepository.save(assignedDriver);
+
+        selectedCar.setStatus("Assigned"); //  Set status as String
+        carRepository.save(selectedCar);
+
+        booking.setDriverId(assignedDriver.getId());
+        booking.setDriverDetails(assignedDriver);
+
         return bookingRepository.save(booking);
     }
 
-    // ✅ Get Booking by ID
-    public Optional<Booking> getBookingById(String id) {
-        return bookingRepository.findById(id);
-    }
-
-    // ✅ Get Bookings by User ID
-    public List<Booking> getUserBookings(String userId) {
-        return bookingRepository.findByUserId(userId);
-    }
-
-    // ✅ Get All Bookings (For Admin)
+    //  Admin can view all bookings
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
     }
 
-    // ✅ Cancel a Booking (User/Admin)
-    public Booking cancelBooking(String bookingId, String userId, String userRole) {
-        Booking booking = bookingRepository.findById(bookingId)
+    //  Users can view their own bookings
+    public List<Booking> getUserBookings(String email) {
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return bookingRepository.findByUserId(user.getId());
+    }
+
+    //  Admin can update booking status
+    public Booking updateBooking(String bookingId, Booking updatedBooking) {
+        var booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        // ✅ Allow only the user who made the booking OR an Admin to cancel
-        if (!booking.getUserId().equals(userId) && !userRole.equals("ROLE_ADMIN")) {
-            throw new AccessDeniedException("Unauthorized to cancel this booking.");
-        }
+        booking.setStatus(updatedBooking.getStatus());
+        booking.setDropoffLocation(updatedBooking.getDropoffLocation());
+        booking.setPickupLocation(updatedBooking.getPickupLocation());
 
-        booking.setStatus(BookingStatus.CANCELLED);
         return bookingRepository.save(booking);
     }
 
-    // ✅ Complete a Booking and Generate a Bill
-    public Booking completeBooking(String id) {
-        Booking booking = bookingRepository.findById(id)
+    //  Admin can cancel any booking
+    public Booking cancelBooking(String bookingId) {
+        var booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new RuntimeException("Booking is already completed.");
+        booking.setStatus(BookingStatus.CANCELLED);
+
+        //  Reset Car & Driver Availability
+        if (booking.getDriverId() != null) {
+            driverRepository.findById(booking.getDriverId()).ifPresent(driver -> {
+                driver.unassignCar();
+                driverRepository.save(driver);
+            });
+
+            carRepository.findById(booking.getSelectedCarId()).ifPresent(car -> {
+                car.setStatus("Available"); //  Set status as String
+                carRepository.save(car);
+            });
         }
 
-        // ✅ Update booking status to COMPLETED
-        booking.setStatus(BookingStatus.COMPLETED);
-        bookingRepository.save(booking);
-
-        // ✅ Automatically generate a bill
-        billingService.generateBill(id);
-
-        // ✅ Update driver earnings
-        updateDriverEarnings(booking.getDriverId(), booking.getFare());
-
-        return booking;
-    }
-
-    private void updateDriverEarnings(String driverId, double fare) {
-        DriverEarnings earnings = driverEarningsRepository.findByDriverId(driverId)
-                .orElse(DriverEarnings.builder().driverId(driverId).totalEarnings(0).build());
-
-        earnings.setTotalEarnings(earnings.getTotalEarnings() + fare);
-        driverEarningsRepository.save(earnings);
+        return bookingRepository.save(booking);
     }
 }

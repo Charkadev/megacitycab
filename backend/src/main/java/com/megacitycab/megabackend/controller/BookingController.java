@@ -1,64 +1,60 @@
 package com.megacitycab.megabackend.controller;
 
-import com.megacitycab.megabackend.config.JwtUtil;
 import com.megacitycab.megabackend.model.Booking;
-import com.megacitycab.megabackend.model.User;
 import com.megacitycab.megabackend.service.BookingService;
-import com.megacitycab.megabackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/bookings")
 @RequiredArgsConstructor
 public class BookingController {
     private final BookingService bookingService;
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
 
-    // ✅ User Books a Ride
+    //  Users can create their own bookings
     @PostMapping("/create")
-    public Booking createBooking(@RequestBody Booking booking) {
-        return bookingService.createBooking(booking);
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public Booking createBooking(@RequestBody Booking booking, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new RuntimeException("Unauthorized - No user details found.");
+        }
+        return bookingService.createBooking(booking, userDetails.getUsername());
     }
 
-    // ✅ Get Booking by ID
-    @GetMapping("/{id}")
-    public Optional<Booking> getBookingById(@PathVariable String id) {
-        return bookingService.getBookingById(id);
-    }
-
-    // ✅ User Views Their Bookings
-    @GetMapping("/user/{userId}")
-    public List<Booking> getUserBookings(@PathVariable String userId) {
-        return bookingService.getUserBookings(userId);
-    }
-
-    // ✅ Admin Views All Bookings
+    //  Admin can view all bookings
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public List<Booking> getAllBookings() {
         return bookingService.getAllBookings();
     }
 
-    // ✅ User/Admin Cancels a Booking
-    @PutMapping("/cancel/{id}")
-    public Booking cancelBooking(@PathVariable String id, @RequestHeader("Authorization") String token) {
-        String email = jwtUtil.extractUsername(token.substring(7)); // Extract user email from JWT
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return bookingService.cancelBooking(id, user.getId(), user.getRole().name());
+    //  Users can view their own bookings
+    @GetMapping("/user")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
+    public List<Booking> getUserBookings(@AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails == null) {
+            throw new RuntimeException("Unauthorized - No user details found.");
+        }
+        return bookingService.getUserBookings(userDetails.getUsername());
     }
 
-    // ✅ Admin Completes a Booking (Marks as COMPLETED)
-    @PutMapping("/complete/{id}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')") // ✅ Admin only
-    public Booking completeBooking(@PathVariable String id) {
-        return bookingService.completeBooking(id);
+    //  Admin can update bookings
+    @PutMapping("/update/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public Booking updateBooking(@PathVariable String id, @RequestBody Booking booking) {
+        return bookingService.updateBooking(id, booking);
+    }
+
+    //  Admin can cancel bookings
+    @DeleteMapping("/cancel/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public String cancelBooking(@PathVariable String id) {
+        bookingService.cancelBooking(id);
+        return "Booking cancelled successfully.";
     }
 }

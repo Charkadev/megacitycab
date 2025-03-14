@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+// BookingHistory.js
+import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-const BookingHistory = () => {
-  const { user } = useAuth();
+function BookingHistory() {
   const [bookings, setBookings] = useState([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -14,26 +15,46 @@ const BookingHistory = () => {
       } catch (error) {
         console.error("Error fetching bookings", error);
       }
-    };
+  };
 
+  if (user && user.id) {
     fetchBookings();
-  }, [user.id]);
+  }
+  }, [user]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold">Booking History</h1>
-      <ul className="mt-4 space-y-4">
-        {bookings.map((booking) => (
-          <li key={booking.id} className="p-4 border rounded shadow">
-            <p><strong>Pickup:</strong> {booking.pickupLocation}</p>
-            <p><strong>Dropoff:</strong> {booking.dropoffLocation}</p>
-            <p><strong>Fare:</strong> ${booking.fare}</p>
-            <p><strong>Status:</strong> <span className={`text-${booking.status === 'COMPLETED' ? 'green' : 'yellow'}-500`}>{booking.status}</span></p>
-          </li>
-        ))}
-      </ul>
+    <div className="p-8">
+      <h2 className="text-2xl font-bold mb-4">Booking History</h2>
+      {bookings.length > 0 ? (
+        <table className="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="py-3 px-4 text-left">Pickup Location</th>
+              <th className="py-3 px-4 text-left">Dropoff Location</th>
+              <th className="py-3 px-4 text-left">Fare</th>
+              <th className="py-3 px-4 text-left">Status</th>
+              <th className="py-3 px-4 text-left">Date & Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.map((booking) => (
+              <tr key={booking.id} className="border-t">
+                <td className="py-2 px-4">{booking.pickupLocation}</td>
+                <td className="py-2 px-4">{booking.dropoffLocation}</td>
+                <td className="py-2 px-4">${booking.fare}</td>
+                <td className="py-2 px-4">{booking.status}</td>
+                <td className="py-2 px-4">
+                  {new Date(booking.timestamp).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p>No bookings found.</p>
+      )}
     </div>
   );
-};
+}
 
 export default BookingHistory;

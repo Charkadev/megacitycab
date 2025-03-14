@@ -20,6 +20,7 @@ const Navbar = () => {
                 <Link to="/admin/drivers" className="hover:underline">Manage Drivers</Link>
               </>
             )}
+            <Link to="/help" className="hover:underline">Help</Link> {/* ✅ Added Help */}
             <button onClick={logout} className="ml-4 bg-red-500 px-3 py-1 rounded">
               Logout
             </button>
@@ -29,6 +30,7 @@ const Navbar = () => {
           <>
             <Link to="/" className="hover:underline">Login</Link>
             <Link to="/register" className="hover:underline">Register</Link>
+            <Link to="/help" className="hover:underline">Help</Link> {/* ✅ Added Help */}
           </>
         )}
       </div>

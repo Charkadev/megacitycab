@@ -6,7 +6,9 @@ import com.megacitycab.megabackend.dto.RegisterRequest;
 import com.megacitycab.megabackend.model.User;
 import com.megacitycab.megabackend.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,19 +17,24 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final AuthService authService;
 
+    //  User Registration
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody RegisterRequest request) {
-        return authService.register(request);
+    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+        AuthResponse response = authService.register(request);
+        return ResponseEntity.ok(response);
     }
 
+    //  User Login
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody AuthRequest request) {
-        return authService.login(request);
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 
-    // ✅ Added missing /user-info endpoint
+    //  Fetch logged-in user info
     @GetMapping("/user-info")
-    public User getUserInfo(@AuthenticationPrincipal org.springframework.security.core.userdetails.User principal) {
-        return authService.getUserInfo(principal.getUsername());
+    public ResponseEntity<User> getUserInfo(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = authService.getUserInfo(userDetails.getUsername());
+        return ResponseEntity.ok(user);
     }
 }

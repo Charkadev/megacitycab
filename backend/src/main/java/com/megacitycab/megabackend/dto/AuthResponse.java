@@ -6,7 +6,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor // Add default constructor
+@NoArgsConstructor
 public class AuthResponse {
     private String token;
+    private String role; //  Ensure role is included
 }

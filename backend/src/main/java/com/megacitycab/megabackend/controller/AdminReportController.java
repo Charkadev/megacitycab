@@ -3,6 +3,7 @@ package com.megacitycab.megabackend.controller;
 import com.megacitycab.megabackend.model.Booking;
 import com.megacitycab.megabackend.service.AdminReportService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,27 +13,35 @@ import java.util.Map;
 @RestController
 @RequestMapping("/admin/reports")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')") //  Ensures only ADMIN can access
 public class AdminReportController {
     private final AdminReportService adminReportService;
 
-    // ✅ Get Total Earnings Report (Admin Only)
+    //  Get Total Earnings Report
     @GetMapping("/total-earnings")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public double getTotalEarnings() {
-        return adminReportService.getTotalEarnings();
+    public ResponseEntity<Double> getTotalEarnings() {
+        double earnings = adminReportService.getTotalEarnings();
+        return ResponseEntity.ok(earnings);
     }
 
-    // ✅ Get Booking Summary Report (Admin Only)
+    //  Get Booking Summary Report
     @GetMapping("/booking-summary")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public Map<String, Long> getBookingSummary() {
-        return adminReportService.getBookingSummary();
+    public ResponseEntity<Map<String, Long>> getBookingSummary() {
+        Map<String, Long> summary = adminReportService.getBookingSummary();
+        return ResponseEntity.ok(summary);
     }
 
-    // ✅ Get User Booking Report (Admin Only)
+    //  Get All Bookings (ADMIN ONLY)
+    @GetMapping("/all-bookings")
+    public ResponseEntity<List<Booking>> getAllBookings() {
+        List<Booking> bookings = adminReportService.getAllBookings();
+        return ResponseEntity.ok(bookings);
+    }
+
+    //  Get User-Specific Booking Report
     @GetMapping("/user-bookings/{userId}")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public List<Booking> getUserBookings(@PathVariable String userId) {
-        return adminReportService.getUserBookings(userId);
+    public ResponseEntity<List<Booking>> getUserBookings(@PathVariable String userId) {
+        List<Booking> bookings = adminReportService.getUserBookings(userId);
+        return ResponseEntity.ok(bookings);
     }
 }

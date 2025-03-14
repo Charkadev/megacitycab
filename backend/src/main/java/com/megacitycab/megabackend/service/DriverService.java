@@ -13,34 +13,34 @@ import java.util.Optional;
 public class DriverService {
     private final DriverRepository driverRepository;
 
+    //  Add a new driver
     public Driver addDriver(Driver driver) {
-        driver.setAvailable(true); // ✅ New drivers are available by default
+        driver.setAvailability(true); //  New drivers start as available
         return driverRepository.save(driver);
     }
 
+    //  Assign a car to a driver
+    public Driver assignCarToDriver(String driverId, String carId) {
+        Driver driver = driverRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver not found"));
+
+        driver.setAssignedCarId(carId);
+        driver.setAvailability(true); //  Driver is now available with an assigned car
+        return driverRepository.save(driver);
+    }
+
+    //  Fetch all drivers
     public List<Driver> getAllDrivers() {
         return driverRepository.findAll();
     }
 
-    public Optional<Driver> getDriverById(String id) {
-        return driverRepository.findById(id);
-    }
-
+    //  Fetch only available drivers
     public List<Driver> getAvailableDrivers() {
-        return driverRepository.findByAvailable(true);
+        return driverRepository.findByAvailabilityTrue();
     }
 
-    public Driver updateDriver(String id, Driver updatedDriver) {
-        return driverRepository.findById(id).map(driver -> {
-            driver.setName(updatedDriver.getName());
-            driver.setLicenseNumber(updatedDriver.getLicenseNumber());
-            driver.setPhone(updatedDriver.getPhone());
-            driver.setAvailable(updatedDriver.isAvailable());
-            return driverRepository.save(driver);
-        }).orElseThrow(() -> new RuntimeException("Driver not found"));
-    }
-
-    public void deleteDriver(String id) {
-        driverRepository.deleteById(id);
+    //  Find an available driver assigned to a specific car
+    public Optional<Driver> getAvailableDriverForCar(String carId) {
+        return driverRepository.findByAssignedCarIdAndAvailabilityTrue(carId);
     }
 }

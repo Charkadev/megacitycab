@@ -6,21 +6,31 @@ const Register = () => {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      await axios.post("http://localhost:8080/auth/register", {
+      const response = await axios.post("http://localhost:8080/auth/register", {
         username,
         email,
         password,
         role: "ROLE_USER",
       });
-      alert("Registration successful! Please login.");
-      navigate("/");
+
+      if (response.status === 200) {
+        alert("Registration successful! Please login.");
+        navigate("/");
+      } else {
+        throw new Error("Unexpected response from server.");
+      }
     } catch (error) {
-      alert("Registration failed!");
+      console.error("🚨 Registration failed:", error.response?.data || error.message);
+      alert(error.response?.data?.error || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -55,9 +65,10 @@ const Register = () => {
           />
           <button
             type="submit"
-            className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600"
+            className={`w-full text-white py-2 rounded ${loading ? "bg-gray-400" : "bg-green-500 hover:bg-green-600"}`}
+            disabled={loading}
           >
-            Register
+            {loading ? "Registering..." : "Register"}
           </button>
         </form>
         <p className="mt-4 text-center">

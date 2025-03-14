@@ -5,20 +5,26 @@ import { api } from "../services/api";
 const BookRide = () => {
   const [pickup, setPickup] = useState("");
   const [dropoff, setDropoff] = useState("");
-  const [fare, setFare] = useState("");
+  const [fare, setFare] = useState(null);
   const navigate = useNavigate();
 
   const handleBooking = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/bookings/create", {
+      const response = await api.post("/bookings/create", {
         pickupLocation: pickup,
         dropoffLocation: dropoff,
-        fare: parseFloat(fare),
       });
-      alert("Booking Successful!");
-      navigate("/dashboard");
+
+      if (response.status === 200) {
+        setFare(response.data.fare);
+        alert(`Booking Successful! Fare: $${response.data.fare}`);
+        navigate("/dashboard");
+      } else {
+        alert("Booking Failed!");
+      }
     } catch (error) {
+      console.error("Error creating booking", error);
       alert("Booking Failed!");
     }
   };
@@ -43,14 +49,6 @@ const BookRide = () => {
           onChange={(e) => setDropoff(e.target.value)}
           required
         />
-        <input
-          type="number"
-          placeholder="Fare ($)"
-          className="w-full p-2 border border-gray-300 rounded"
-          value={fare}
-          onChange={(e) => setFare(e.target.value)}
-          required
-        />
         <button
           type="submit"
           className="w-full bg-blue-500 text-white py-2 rounded"
@@ -58,6 +56,7 @@ const BookRide = () => {
           Book Now
         </button>
       </form>
+      {fare && <p className="mt-4">Estimated Fare: ${fare}</p>}
     </div>
   );
 };

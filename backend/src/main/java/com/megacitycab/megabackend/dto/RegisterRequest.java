@@ -8,5 +8,5 @@ public class RegisterRequest {
     private String username;
     private String email;
     private String password;
-    private Role role; // ✅ Allow role assignment (for admin registration)
+    private Role role; //  Allow role assignment (for admin registration)
 }

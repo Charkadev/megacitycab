@@ -14,13 +14,13 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ResponseEntity<String> handleAccessDeniedException(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body("❌ Access Denied: You do not have permission to access this resource.");
+                .body(" Access Denied: You do not have permission to access this resource.");
     }
 
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ResponseEntity<String> handleUnauthorizedException(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body("❌ Unauthorized: " + ex.getMessage());
+                .body(" Unauthorized: " + ex.getMessage());
     }
 }

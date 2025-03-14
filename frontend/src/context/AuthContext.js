@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { api, setAuthToken } from "../services/api";
+import { api } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
@@ -10,39 +10,50 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) {
-      setAuthToken(token);
-      fetchUser();
+    const role = localStorage.getItem("role");
+
+    console.log("🔍 Checking stored role:", role); // Debugging log
+
+    if (token && role) {
+      setUser({ role });
     }
   }, []);
-
-  const fetchUser = async () => {
-    try {
-      const response = await api.get("/auth/user-info");
-      setUser(response.data);
-    } catch (error) {
-      console.error("User not authenticated", error);
-      logout();
-    }
-  };
 
   const login = async ({ email, password }) => {
     try {
       const response = await api.post("/auth/login", { email, password });
-      const token = response.data.token;
+      const { token, role } = response.data;
+
+      if (!token || !role) {
+        throw new Error("❌ Token or Role missing in response");
+      }
+
+      console.log("📡 Received Role from Backend:", role);
+
+      // ✅ Store token and role
       localStorage.setItem("token", token);
-      setAuthToken(token);
-      await fetchUser();
-      navigate("/dashboard");
+      localStorage.setItem("role", role);
+
+      setUser({ role });
+
+      // ✅ Redirect based on role
+      if (role === "ROLE_ADMIN") {
+        console.log("✅ Admin Login Successful! Redirecting to Admin Dashboard...");
+        navigate("/admin/dashboard");
+      } else {
+        console.log("✅ User Login Successful! Redirecting to User Dashboard...");
+        navigate("/dashboard");
+      }
     } catch (error) {
-      console.error("Login failed", error);
-      alert("Invalid login credentials! Please try again.");
+      console.error("🚨 Login failed:", error.response?.data || error);
+      alert("❌ Invalid credentials! Please try again.");
     }
   };
 
   const logout = () => {
+    console.warn("🚨 Logging out user...");
     localStorage.removeItem("token");
-    setAuthToken(null);
+    localStorage.removeItem("role");
     setUser(null);
     navigate("/");
   };

@@ -14,22 +14,22 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class BillingService {
-
     private final BillingRepository billingRepository;
     private final BookingRepository bookingRepository;
 
     private static final double TAX_RATE = 0.10; // 10% tax rate
 
-    // Generate a bill when a booking is completed
+    //  Generate a bill for a completed booking
     public Billing generateBill(String bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        // Check if billing already exists for this booking
-        Optional<Billing> existingBill = billingRepository.findAll().stream()
-                .filter(bill -> bill.getBookingId().equals(bookingId))
-                .findFirst();
+        if (!booking.getStatus().equals("COMPLETED")) {
+            throw new RuntimeException("Bill can only be generated for completed bookings.");
+        }
 
+        // Check if a bill already exists
+        Optional<Billing> existingBill = billingRepository.findByBookingId(bookingId);
         if (existingBill.isPresent()) {
             return existingBill.get();
         }
@@ -50,21 +50,13 @@ public class BillingService {
         return billingRepository.save(bill);
     }
 
-    // Get all bills (Admin only)
+    //  Get All Bills (Admin Only)
     public List<Billing> getAllBills() {
-        List<Billing> bills = billingRepository.findAll();
-        if (bills.isEmpty()) {
-            throw new RuntimeException("No billing records found.");
-        }
-        return bills;
+        return billingRepository.findAll();
     }
 
-    // Get bills for a specific user
+    //  Get Billing History for a Specific User
     public List<Billing> getUserBills(String userId) {
-        List<Billing> userBills = billingRepository.findByUserId(userId);
-        if (userBills.isEmpty()) {
-            throw new RuntimeException("No bills found for the given user.");
-        }
-        return userBills;
+        return billingRepository.findByUserId(userId);
     }
 }

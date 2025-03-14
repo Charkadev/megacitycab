@@ -1,99 +1,71 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 
 const AdminDrivers = () => {
+  const navigate = useNavigate();
   const [drivers, setDrivers] = useState([]);
-  const [newDriver, setNewDriver] = useState({ name: "", licenseNumber: "", phone: "" });
+  const [cars, setCars] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCar, setSelectedCar] = useState({});
 
   useEffect(() => {
-    const fetchDrivers = async () => {
-      try {
-        const response = await api.get("/drivers/all");
-        setDrivers(response.data);
-      } catch (error) {
-        console.error("Error fetching drivers", error);
-      }
-    };
-
     fetchDrivers();
+    fetchAvailableCars();
   }, []);
 
-  const handleAddDriver = async (e) => {
-    e.preventDefault();
+  const fetchDrivers = async () => {
     try {
-      await api.post("/drivers/add", newDriver);
-      alert("Driver added!");
-      setNewDriver({ name: "", licenseNumber: "", phone: "" });
-      window.location.reload();
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("🚨 No auth token found");
+        return;
+      }
+      const response = await api.get("/admin/drivers/all", { headers: { Authorization: `Bearer ${token}` } });
+      setDrivers(response.data || []);
     } catch (error) {
-      alert("Failed to add driver");
+      console.error("🚨 Error fetching drivers:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteDriver = async (id) => {
+  const fetchAvailableCars = async () => {
     try {
-      await api.delete(`/drivers/delete/${id}`);
-      alert("Driver deleted!");
-      setDrivers(drivers.filter(driver => driver.id !== id));
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("🚨 No auth token found");
+        return;
+      }
+      const response = await api.get("/admin/cars/available", { headers: { Authorization: `Bearer ${token}` } });
+      setCars(response.data || []);
     } catch (error) {
-      alert("Failed to delete driver");
+      console.error("🚨 Error fetching available cars:", error);
     }
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold">Manage Drivers</h1>
+      <h2 className="text-2xl font-semibold">🚖 Manage Drivers</h2>
+      <p className="text-gray-600">View, assign cars, and remove drivers.</p>
 
-      <form onSubmit={handleAddDriver} className="mt-4 space-y-4">
-        <input
-          type="text"
-          placeholder="Driver Name"
-          className="w-full p-2 border border-gray-300 rounded"
-          value={newDriver.name}
-          onChange={(e) => setNewDriver({ ...newDriver, name: e.target.value })}
-          required
-        />
-        <input
-          type="text"
-          placeholder="License Number"
-          className="w-full p-2 border border-gray-300 rounded"
-          value={newDriver.licenseNumber}
-          onChange={(e) => setNewDriver({ ...newDriver, licenseNumber: e.target.value })}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Phone Number"
-          className="w-full p-2 border border-gray-300 rounded"
-          value={newDriver.phone}
-          onChange={(e) => setNewDriver({ ...newDriver, phone: e.target.value })}
-          required
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 rounded"
-        >
-          Add Driver
-        </button>
-      </form>
+      {loading ? (
+        <p>Loading drivers...</p>
+      ) : drivers.length === 0 ? (
+        <p>No drivers found.</p>
+      ) : (
+        <ul className="mt-4">
+          {drivers.map((driver) => (
+            <li key={driver.id} className="p-3 border rounded mb-2">
+              {driver.name} - {driver.phone} 
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <ul className="mt-6 space-y-4">
-        {drivers.map((driver) => (
-          <li key={driver.id} className="p-4 border rounded shadow flex justify-between">
-            <div>
-              <p><strong>Name:</strong> {driver.name}</p>
-              <p><strong>License:</strong> {driver.licenseNumber}</p>
-              <p><strong>Phone:</strong> {driver.phone}</p>
-            </div>
-            <button
-              onClick={() => handleDeleteDriver(driver.id)}
-              className="bg-red-500 text-white px-3 py-1 rounded"
-            >
-              Delete
-            </button>
-          </li>
-        ))}
-      </ul>
+      <button onClick={() => navigate("/admin/add-driver")} className="mt-4 bg-green-500 text-white px-4 py-2 rounded">
+        ➕ Add New Driver
+      </button>
     </div>
   );
 };

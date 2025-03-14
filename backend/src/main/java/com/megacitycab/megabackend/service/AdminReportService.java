@@ -15,30 +15,30 @@ import java.util.Map;
 public class AdminReportService {
     private final BookingRepository bookingRepository;
 
-    // ✅ Generate Total Earnings Report (Summing from all COMPLETED bookings)
+    //  Get Total Earnings Report (Summing from all COMPLETED bookings)
     public double getTotalEarnings() {
-        List<Booking> completedBookings = bookingRepository.findAll();
-
+        List<Booking> completedBookings = bookingRepository.findByStatus(BookingStatus.COMPLETED);
         return completedBookings.stream()
-                .filter(booking -> booking.getStatus() == BookingStatus.COMPLETED) // ✅ Only COMPLETED bookings
-                .mapToDouble(Booking::getFare) // ✅ Sum fares of completed bookings
+                .mapToDouble(Booking::getFare) //  Sum fares of completed bookings
                 .sum();
     }
 
-    // ✅ Generate Booking Summary Report
+    //  Get Booking Summary Report
     public Map<String, Long> getBookingSummary() {
         Map<String, Long> summary = new HashMap<>();
         summary.put("Total Bookings", bookingRepository.count());
-        summary.put("Completed Bookings", bookingRepository.findAll().stream()
-                .filter(booking -> booking.getStatus() == BookingStatus.COMPLETED).count());
-        summary.put("Pending Bookings", bookingRepository.findAll().stream()
-                .filter(booking -> booking.getStatus() == BookingStatus.PENDING).count());
-        summary.put("Cancelled Bookings", bookingRepository.findAll().stream()
-                .filter(booking -> booking.getStatus() == BookingStatus.CANCELLED).count());
+        summary.put("Completed Bookings", bookingRepository.countByStatus(BookingStatus.COMPLETED));
+        summary.put("Pending Bookings", bookingRepository.countByStatus(BookingStatus.PENDING));
+        summary.put("Cancelled Bookings", bookingRepository.countByStatus(BookingStatus.CANCELLED));
         return summary;
     }
 
-    // ✅ Get User Booking Report
+    //  Fetch All Bookings (Admin Only)
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
+    }
+
+    //  Fetch User Booking Report
     public List<Booking> getUserBookings(String userId) {
         return bookingRepository.findByUserId(userId);
     }
